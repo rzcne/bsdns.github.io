@@ -1,12 +1,194 @@
-<html>
+<!DOCTYPE html>
+<html lang="en">
 <head>
+  <!-- ico图标 -->
+    <link rel="shortcut icon" type="image/x-icon" sizes="16x16" href="https://bingbook.cn/ico/favicon16x16.ico">
+    <link rel="shortcut icon" type="image/x-icon" sizes="32x32" href="https://bingbook.cn/ico/favicon32x32.ico">
+    <link rel="shortcut icon" type="image/x-icon" sizes="48x48" href="https://bingbook.cn/ico/favicon48x48.ico">
+    <link rel="shortcut icon" type="image/x-icon" sizes="64x64" href="https://bingbook.cn/ico/favicon64x64.ico">
+    <link rel="shortcut icon" type="image/x-icon" sizes="128x128" href="https://bingbook.cn/ico/favicon128x128.ico">
+    <link rel="shortcut icon" type="image/x-icon" sizes="256x256" href="https://bingbook.cn/ico/favicon256x256.ico">
+    <link rel="shortcut icon" type="image/x-icon" sizes="512x512" href="https://bingbook.cn/ico/favicon512x512.ico">
+  
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>冰书系统服务状态监控</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+            color: #333;
+        }
 
-  <meta charset="UTF-8">
-    <title>        </title>
-    <meta http-equiv="refresh" content="0;url=https://m.tb.cn/h.6nNAvRb?tk=0IzrVURqAUA
-">
+        .container {
+            max-width: 800px;
+            margin: auto;
+            text-align: center; /* Center align the logo and title */
+        }
+
+        .header {
+            display: flex;
+            align-items: center; /* Center items vertically */
+            justify-content: center; /* Center items horizontally */
+            margin-bottom: 20px; /* Space between header and status container */
+        }
+
+        .logo {
+            max-width: 25px; /* Set a fixed width for the logo */
+            height: auto; /* Maintain aspect ratio */
+            margin-right: 10px; /* Space between logo and title */
+        }
+
+        h1 {
+            font-size: 24px; /* Adjust title font size */
+            margin: 0; /* Remove default margin */
+        }
+
+        .status-container {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            animation: fadeIn 0.5s;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .status-item:hover {
+            background: #f9f9f9;
+        }
+
+        .status-item:last-child {
+            border-bottom: none;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 15px;
+        }
+
+        .up {
+            background: #4CAF50;
+        }
+
+        .down {
+            background: #f44336;
+        }
+
+        .paused {
+            background: #ff9800;
+        }
+
+        .status-name {
+            flex: 1;
+            font-weight: 500;
+        }
+
+        .status-percentage {
+            font-weight: bold;
+            color: #4CAF50;
+            margin-bottom: 20px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #666;
+        }
+
+        .url-item {
+            margin-top: 10px;
+            color: #000; /* URL color */
+            display: none; /* Initially hidden */
+            font-size: 14px; /* Optional: adjust font size of URL */
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+            }
+            to {
+                opacity: 1;
+            }
+        }
+    </style>
 </head>
 <body>
+    <div class="container">
+        <div class="header">
+            <img src="https://bingbook.cn/img/logo.png" alt="Logo" class="logo">
+            <h1>冰书服务系统状态监控</h1>
+        </div>
+        <div class="status-container" id="statusContainer">
+            <div class="loading">Loading...</div>
+        </div>
+    </div>
 
+    <script>
+        const API_KEY = 'ur2945200-dc1bc3a948ecd90e61edb1a3';
+        const API_URL = 'https://api.uptimerobot.com/v2/getMonitors';
+
+        function getStatusClass(status) {
+            return status === 2 ? 'up' : status === 9 ? 'down' : 'paused';
+        }
+
+        async function fetchStatus() {
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `api_key=${API_KEY}&format=json`
+                });
+
+                const data = await response.json();
+                const container = document.getElementById('statusContainer');
+
+                if (data.stat === 'ok') {
+                    container.innerHTML = `<div class="status-percentage">正常运行状态: ${(data.monitors.filter(m => m.status === 2).length / data.monitors.length * 100).toFixed(2)}%</div>`;
+                    
+                    data.monitors.forEach(monitor => {
+                        const statusItem = document.createElement('div');
+                        statusItem.className = 'status-item';
+                        statusItem.innerHTML = `
+                            <div class="status-dot ${getStatusClass(monitor.status)}"></div>
+                            <div class="status-name">${monitor.friendly_name}</div>
+                        `;
+
+                        const urlItem = document.createElement('div');
+                        urlItem.className = 'url-item';
+                        urlItem.innerText = monitor.url; // 只显示网址，不包含“网址:”
+
+                        statusItem.addEventListener('click', () => {
+                            urlItem.style.display = urlItem.style.display === 'none' ? 'block' : 'none';
+                        });
+
+                        container.appendChild(statusItem);
+                        container.appendChild(urlItem);
+                    });
+                } else {
+                    container.innerHTML = `<div class="loading">获取数据失败，请检查 API Key</div>`;
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                document.getElementById('statusContainer').innerHTML = `<div class="loading">获取数据时发生错误</div>`;
+            }
+        }
+
+        fetchStatus();
+        setInterval(fetchStatus, 300000);
+    </script>
 </body>
 </html>
